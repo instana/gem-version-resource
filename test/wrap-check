@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo "{\"source\": {\"gem\": \"${1}\"}}" | docker run instana/gem-version-resource:latest bash -x /opt/resource/check

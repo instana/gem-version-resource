@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -x
+set -e
+set -u
+set -o pipefail
+
+exec 3>&1
+exec 1>&2
+
+readonly destination=$1
+
+if [ -z "${destination}" ]; then
+  echo "usage: $0 <path/to/destination>" >&2
+  exit 1
+fi
+
+mkdir -p "${destination}"
+
+readonly input_file=$(mktemp input.XXXXXX)
+
+cat > "${input_file}" <&0
+
+readonly gem=$(jq -r '.source.gem' < "${input_file}")
+
+if [ -z "${gem}" ]; then
+    echo "Invalid payload: missing 'gem'"
+    exit 1
+fi
+
+readonly endpoint_url="https://rubygems.org/api/v1/versions/${gem}/latest.json"
+
+echo "Using the API endpoint: ${endpoint_url}"
+
+readonly version=$(curl --silent --show-error --fail "${endpoint_url}" | jq -r '.version')
+
+if [ "${version}" = 'unknown' ]; then
+  echo "The '${gem}' Gem does not appear to exist on RubyGems.org"
+  exit 1
+fi
+
+echo "${version}" > "${destination}/version"
+
+echo "{\"version\":{\"version\":\"$version\"},\"metadata\":[{\"name\":\"version\",\"value\":\"$version\"},{\"name\":\"gem\",\"value\":\"${gem}\"}]}" >&3
