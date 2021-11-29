@@ -14,7 +14,7 @@ resource_types:
   - name: gem-version
     type: registry-image
     source:
-      repository: instana/gem-version-resource
+      repository: icr.io/instana/gem-version-resource
       tag: latest
 
 resources:

@@ -1,0 +1,40 @@
+resources:
+  - name: gem-version-resource-source
+    type: git
+    icon: gihub
+    source:
+      uri: https://github.com/instana/gem-version-resource.git
+      branch: ((branch))
+  - name: gem-version-resource-image-icr
+    type: registry-image
+    icon: docker
+    source:
+      repository: icr.io/instana/gem-version-resource
+      username: iamapikey
+      password: ((concourse-icr-containers-public.password))
+      tag: latest
+
+jobs:
+  - name: build-and-publish
+    plan:
+      - get: gem-version-resource-source
+        trigger: true
+      - task: image-build
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: concourse/oci-build-task
+          inputs:
+            - name: gem-version-resource-source
+          outputs:
+            - name: image
+          params:
+            CONTEXT: gem-version-resource-source
+          run:
+            path: build
+      - put: gem-version-resource-image-icr
+        params:
+          image: image/image.tar
